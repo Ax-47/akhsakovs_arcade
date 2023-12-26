@@ -11,7 +11,7 @@ use ratatui::{prelude::*, widgets::*};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedSender;
 
-#[derive(Default)]
+#[derive(Default,Clone)]
 pub struct Home {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,

@@ -18,7 +18,8 @@ pub struct GamesArchive<'a> {
     config: Config,
     selection: usize,
     max_selection: usize,
-    items_selection: Vec<Line<'a>>,
+    selection_items: Vec<Line<'a>>,
+    items: Vec<String>,
     cache : usize,
 }
 
@@ -28,9 +29,10 @@ impl GamesArchive<'_> {
     }
     pub fn create(&mut self)->Self{
         let style =Style::default().light_green();
-        self.items_selection=vec![Line::styled("tetris",style), Line::styled("snake_eats_apples",style)];
+        self.items= vec!["tetris".to_string(), "snake_eats_apples".to_string()];
+        self.selection_items=vec![Line::styled("tetris",style), Line::styled("snake_eats_apples",style)];
         
-        self.max_selection = self.items_selection.iter().len() - 1;
+        self.max_selection = self.selection_items.iter().len() - 1;
          self.to_owned()
         
     }
@@ -86,10 +88,10 @@ impl Component for GamesArchive<'_> {
             .end_symbol(Some("↓"));
         
        
-        let paragraph = Paragraph::new(self.items_selection.clone())
+        let paragraph = Paragraph::new(self.selection_items.clone())
             .alignment(Alignment::Center)
             .block(Block::new().borders(Borders::RIGHT));
-        let mut scrollbar_state = ScrollbarState::new(self.items_selection.iter().len()).position(self.selection);
+        let mut scrollbar_state = ScrollbarState::new(self.selection_items.iter().len()).position(self.selection);
         f.render_widget(paragraph, layout[1]);
         f.render_stateful_widget(
             scrollbar,
@@ -99,6 +101,9 @@ impl Component for GamesArchive<'_> {
         Ok(())
     }
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+        if key.code == KeyCode::Enter{
+            return Ok(Some(Action::To(self.items[self.selection].to_owned())));
+        }
         let selection_style=Style::default().black().on_light_green();
         let unselection_style=Style::default().reset().light_green();
         self.cache =self.selection;
@@ -109,8 +114,8 @@ impl Component for GamesArchive<'_> {
                 } else {
                     self.selection += 1;
                 }
-                self.items_selection[self.selection].patch_style(selection_style);
-                self.items_selection[self.cache].patch_style(unselection_style);
+                self.selection_items[self.selection].patch_style(selection_style);
+                self.selection_items[self.cache].patch_style(unselection_style);
             }
             KeyCode::Down => {
                 if self.selection == 0 {
@@ -118,11 +123,13 @@ impl Component for GamesArchive<'_> {
                 } else {
                     self.selection -= 1;
                 }
-                self.items_selection[self.selection].patch_style(selection_style);
-                self.items_selection[self.cache].patch_style(unselection_style);
+                self.selection_items[self.selection].patch_style(selection_style);
+                self.selection_items[self.cache].patch_style(unselection_style);
             }
+           
             _ => {}
         }
+        
         Ok(None)
     }
 }
