@@ -12,6 +12,7 @@ use crate::{
 pub mod fps;
 pub mod games_archive;
 pub mod home;
+pub mod tetris;
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 /// Implementors of this trait can be registered with the main application loop and will be able to receive events,
 /// update state, and be rendered on the screen.

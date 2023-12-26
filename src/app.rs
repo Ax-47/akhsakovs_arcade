@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 
 use crate::{
     action::Action,
-    components::{fps::FpsCounter, games_archive::GamesArchive, home::Home, Component},
+    components::{fps::FpsCounter, games_archive::GamesArchive,tetris::Tetris, home::Home, Component},
     config::Config,
     mode::Mode,
     tui,
@@ -70,11 +70,46 @@ impl App {
                     tui::Event::Render => action_tx.send(Action::Render)?,
                     tui::Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
                     tui::Event::Key(key) => {
-                        if let Some(keymap) = self.config.keybindings.get(&self.mode) {
-                            if self.mode == Mode::Home && key.code == KeyCode::Enter {
-                                let games_archive = GamesArchive::new();
-                                self.components = vec![Box::new(games_archive)];
+                        if key.code == KeyCode::Enter{
+                            match self.mode {
+                                Mode::Home=>{
+                                    let games_archive = GamesArchive::new();
+                                    self.components = vec![Box::new(games_archive)];
+                                    self.mode=Mode::GamesArchive;
+                                },
+                                Mode::GamesArchive=>{
+                                    println!("xx");
+                                    let tetris = Tetris::new();
+                                    self.components = vec![Box::new(tetris)];
+                                    self.mode=Mode::Tetris;
+                                },
+                                _=>{
+
+                                 
+                                },
                             }
+                        }
+                        if  let Some(keymap) = self.config.keybindings.get(&Mode::Gobal) {
+                            if let Some(action) = keymap.get(&vec![key]) {
+                                log::info!("Got action: {action:?}");
+                                action_tx.send(action.clone())?;
+                            } else {
+                                // If the key was not handled as a single key action,
+                                // then consider it for multi-key combinations.
+                                self.last_tick_key_events.push(key);
+
+                                // Check for multi-key combinations
+                                if let Some(action) = keymap.get(&self.last_tick_key_events) {
+                                    log::info!("Got action: {action:?}");
+                                    action_tx.send(action.clone())?;
+                                }
+                            }
+
+                        }
+                        if let Some(keymap) = self.config.keybindings.get(&self.mode) {
+
+                            
+                            
                             if let Some(action) = keymap.get(&vec![key]) {
                                 log::info!("Got action: {action:?}");
                                 action_tx.send(action.clone())?;

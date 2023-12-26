@@ -11,23 +11,35 @@ use ratatui::{prelude::*, widgets::*};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedSender;
 
-#[derive(Default)]
-pub struct GamesArchive {
+
+#[derive( Default, Clone)]
+pub struct GamesArchive<'a> {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     selection: usize,
     max_selection: usize,
+    items_selection: Vec<Line<'a>>,
+    cache : usize,
 }
 
-impl GamesArchive {
+impl GamesArchive<'_> {
     pub fn new() -> Self {
-        Self::default()
+        Self::default().create()
+    }
+    pub fn create(&mut self)->Self{
+        let style =Style::default().light_green();
+        self.items_selection=vec![Line::styled("tetris",style), Line::styled("snake_eats_apples",style)];
+        
+        self.max_selection = self.items_selection.iter().len() - 1;
+         self.to_owned()
+        
     }
 }
 
-impl Component for GamesArchive {
+impl Component for GamesArchive<'_> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
+        
         Ok(())
     }
 
@@ -64,8 +76,7 @@ impl Component for GamesArchive {
             .alignment(Alignment::Center)
             .block(Block::default().borders(Borders::ALL));
         f.render_widget(title, layout[0]);
-        let mut items: Vec<Line<'_>> = vec![Line::from("tetris"), Line::from("snake_eats_apples")];
-        self.max_selection = items.iter().len() - 1;
+        
         let scrollbar = Scrollbar::default()
             .orientation(ScrollbarOrientation::VerticalRight)
             .thumb_style(Style::default().light_green())
@@ -73,11 +84,12 @@ impl Component for GamesArchive {
             .end_style(Style::default().light_green())
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
-        items[self.selection].patch_style(Style::default().black().on_light_green());
-        let paragraph = Paragraph::new(items.clone())
+        
+       
+        let paragraph = Paragraph::new(self.items_selection.clone())
             .alignment(Alignment::Center)
             .block(Block::new().borders(Borders::RIGHT));
-        let mut scrollbar_state = ScrollbarState::new(items.iter().len()).position(self.selection);
+        let mut scrollbar_state = ScrollbarState::new(self.items_selection.iter().len()).position(self.selection);
         f.render_widget(paragraph, layout[1]);
         f.render_stateful_widget(
             scrollbar,
@@ -87,20 +99,27 @@ impl Component for GamesArchive {
         Ok(())
     }
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+        let selection_style=Style::default().black().on_light_green();
+        let unselection_style=Style::default().reset().light_green();
+        self.cache =self.selection;
         match key.code {
             KeyCode::Up => {
-                if self.selection == 0 {
-                    self.selection = self.max_selection;
-                } else {
-                    self.selection -= 1;
-                }
-            }
-            KeyCode::Down => {
                 if self.selection == self.max_selection {
                     self.selection = 0;
                 } else {
                     self.selection += 1;
                 }
+                self.items_selection[self.selection].patch_style(selection_style);
+                self.items_selection[self.cache].patch_style(unselection_style);
+            }
+            KeyCode::Down => {
+                if self.selection == 0 {
+                    self.selection = self.max_selection;
+                } else {
+                    self.selection -= 1;
+                }
+                self.items_selection[self.selection].patch_style(selection_style);
+                self.items_selection[self.cache].patch_style(unselection_style);
             }
             _ => {}
         }

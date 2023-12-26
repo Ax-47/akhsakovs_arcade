@@ -4,5 +4,7 @@ use serde::{Deserialize, Serialize};
 pub enum Mode {
     #[default]
     Home,
+    Gobal,
     GamesArchive,
+    Tetris,
 }
